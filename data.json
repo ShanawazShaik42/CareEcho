@@ -1,0 +1,38 @@
+{
+  "lang": "hi-IN",
+  "meds": [
+    {
+      "name": "Panacetamol",
+      "dose": "500mg",
+      "times": [
+        "08:00"
+      ],
+      "note": ""
+    },
+    {
+      "name": "Citrizen",
+      "dose": "200mg",
+      "times": [
+        "14:00"
+      ],
+      "note": ""
+    },
+    {
+      "name": "DOLO",
+      "dose": "650mg",
+      "times": [
+        "14:00",
+        "20:00"
+      ],
+      "note": ""
+    }
+  ],
+  "visit": "2026-10-09T09:00",
+  "diet": "",
+  "log": [],
+  "alerted": [
+    "2026-10-03|Paracetomol 500mg|19:15",
+    "2026-10-03|DOLO|20:00"
+  ],
+  "visited": "2026-10-01"
+}
