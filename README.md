@@ -6,6 +6,8 @@ Built for the **HackNowa Global Hackathon 2026** · Domain: *AI for Everyday Lif
 
 ---
 
+Live Demo: https://careecho.onrender.com/
+
 ## The Problem
 
 After leaving the hospital, many elderly patients in rural areas go home with a discharge paper they cannot read and medicines they do not understand. Missed doses, wrong tablets and skipped checkups lead to avoidable readmissions. Text reminders don't help someone who cannot read.
