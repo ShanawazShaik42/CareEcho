@@ -807,6 +807,7 @@ def api_photo():
         r = " ".join(parts)
     return jsonify({"text": r, "lang": lang, "items": items, "take": [m["name"] for m in take]})
 
+threading.Thread(target=lambda: (models_to_try(), prewarm(), prewarm_dynamic(load())), daemon=True).start()
+
 if __name__ == "__main__":
-    threading.Thread(target=lambda: (models_to_try(), prewarm(), prewarm_dynamic(load())), daemon=True).start()
     app.run(debug=True)
