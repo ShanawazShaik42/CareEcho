@@ -809,5 +809,65 @@ def api_photo():
 
 threading.Thread(target=lambda: (models_to_try(), prewarm(), prewarm_dynamic(load())), daemon=True).start()
 
+import difflib, json, re, os
+from flask import request, jsonify
+
+def _norm(s):
+    return re.sub(r"[^a-z0-9 ]", "", (s or "").lower()).strip()
+
+def _similar(a, b):
+    a, b = _norm(a), _norm(b)
+    if not a or not b:
+        return 0
+    if a in b or b in a:
+        return 100
+    return int(difflib.SequenceMatcher(None, a, b).ratio() * 100)
+
+def _ask_gemini_about_pill(image_bytes, mime, names):
+    from google.genai import types
+    prompt = (
+        "You are checking a medicine strip or tablet photo for an elderly patient.\n"
+        "Prescribed medicines: " + ", ".join(names) + "\n"
+        "Read any visible text (brand name, generic name, strength). Use colour, shape "
+        "and packaging too. Pick the prescribed medicine this most likely is, or 'none'.\n"
+        'Reply ONLY with JSON: {"visible_text": "...", "best_match": "<name from list or none>", '
+        '"confidence": "high|medium|low"}'
+    )
+    text = ask([types.Part.from_bytes(data=image_bytes, mime_type=mime), prompt], json_out=True)
+    text = re.sub(r"```json|```", "", text or "").strip()
+    return json.loads(text)
+
+@app.route("/verify_pill", methods=["POST"])
+def verify_pill():
+    d = load()
+    meds = d.get("meds", [])
+    names = [m["name"] for m in meds]
+    f = request.files.get("photo")
+    if not f or not names:
+        return jsonify(status="retry", message="Please show the tablet again.")
+    try:
+        g = _ask_gemini_about_pill(f.read(), f.mimetype or "image/jpeg", names)
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        print("VERIFY ERROR:", repr(e))
+        return jsonify(status="unsure", message="I am not sure. Please wait, I will call your family.")
+
+    best, conf = g.get("best_match", "none"), g.get("confidence", "low")
+    seen = g.get("visible_text", "")
+    print("PILL DEBUG -> saved:", names, "| read:", seen, "| gemini pick:", best, conf)
+
+    # Score = best of: Gemini's own pick, and fuzzy match of the text it read
+    scores = {n: _similar(seen, n) for n in names}
+    if best in names:
+        scores[best] = max(scores[best], 90 if conf == "high" else 75 if conf == "medium" else 55)
+    top = max(scores, key=scores.get)
+    score = scores[top]
+
+    if score >= 80:
+        return jsonify(status="ok", medicine=top, score=score)
+    if score >= 60:
+        return jsonify(status="retry", message="Please hold the strip closer and flat.", score=score)
+    return jsonify(status="unsure", message="I am not sure. Please do not take it yet. I will alert your family.", score=score)
+
 if __name__ == "__main__":
     app.run(debug=True)
